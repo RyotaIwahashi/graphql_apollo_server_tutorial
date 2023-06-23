@@ -38,11 +38,15 @@ let persons = [
 // 感嘆符は、Queryの返答として必須項目であることを示す。
 // type Query は、GraphQLサーバ(API) に対してどのような種類のクエリを実行できるかを示す。
 const typeDefs = `
+  type Address {
+    street: String!
+    city: String!
+  }
+
   type Person {
     name: String!
     phone: String
-    street: String!
-    city: String!
+    address: Address!
     id: ID!
   }
 
@@ -68,19 +72,30 @@ const resolvers = {
   // Person: {
   //   name: (obj) => obj.name,
   //   phone: (obj) => obj.phone,
-  //   street: (obj) => obj.street,
-  //   city: (obj) => obj.city,
   //   id: (obj) => obj.id
   // }
+
+  // address のように、アドレスフィールドがないものは、デフォルトのリゾルバーでは不十分で、
+  // Personタイプのaddressフィールドとしてリゾルバーを追加する必要がある。
+  Person: {
+    address: (obj) => {
+      return {
+        street: obj.street,
+        city: obj.city
+      }
+    }
+  }
 }
 
 // Query は例えば以下のようになる。
 // このとき、queryに記載される findPerson や phone には、すべてリゾルバが必要。
 // query {
 //   findPerson(name: "Arto Hellas") {
-//     phone
-//     city
-//     street
+//     phone 
+//     address {
+//       city 
+//       street
+//     }
 //   }
 // }
 
