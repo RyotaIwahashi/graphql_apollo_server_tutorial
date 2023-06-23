@@ -1,6 +1,7 @@
 // GraphQL
 // ブラウザ上のコードが必要なデータを記述するクエリを形成し、それを HTTP POST リクエストで GraphQL の API に送信する。
 // REST のリソースベースとは異なり、すべての GraphQL クエリは同じアドレスに送信され、そのタイプは POST になる。
+// node index.js で実行したら、http://localhost:4000 でQueryを実行できる。
 
 const { ApolloServer } = require('@apollo/server')
 const { startStandaloneServer } = require('@apollo/server/standalone')
@@ -53,14 +54,35 @@ const typeDefs = `
 `
 
 // GraphQL クエリは、サーバーとクライアントの間で移動するデータのみを記述する。
+// すべてのリゾルバーは、次の 4 つの位置引数が与えられる。
+// それぞれの引数について https://the-guild.dev/graphql/tools/docs/resolvers#resolver-function-signature
 const resolvers = {
   Query: {
     personCount: () => persons.length,
     allPersons: () => persons,
-    findPerson: (root, args) => 
+    findPerson: (obj, args) => 
       persons.find(p => p.name === args.name)
-  }
+  },
+  // 以下はデフォルトで含まれており、ユーザが定義せずとも使用できるリゾルバ。
+  // 親フィールドのリゾルバーから返された結果を含む obj から、それぞれの値を取得するリゾルバ。
+  // Person: {
+  //   name: (obj) => obj.name,
+  //   phone: (obj) => obj.phone,
+  //   street: (obj) => obj.street,
+  //   city: (obj) => obj.city,
+  //   id: (obj) => obj.id
+  // }
 }
+
+// Query は例えば以下のようになる。
+// このとき、queryに記載される findPerson や phone には、すべてリゾルバが必要。
+// query {
+//   findPerson(name: "Arto Hellas") {
+//     phone
+//     city
+//     street
+//   }
+// }
 
 // typeDefs は、GraphQLスキーマが含まれる。
 // resolvers は、サーバのリゾルバーで、GraphQLクエリへの応答方法を定義する。
