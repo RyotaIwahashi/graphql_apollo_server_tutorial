@@ -5,6 +5,7 @@
 
 const { ApolloServer } = require('@apollo/server')
 const { startStandaloneServer } = require('@apollo/server/standalone')
+const { GraphQLError } = require('graphql')
 
 const { v1: uuid } = require('uuid')
 
@@ -52,9 +53,14 @@ const typeDefs = `
     id: ID!
   }
 
+  enum YesNo {
+    YES
+    NO
+  }
+
   type Query {
     personCount: Int!
-    allPersons: [Person!]!
+    allPersons(phone: YesNo): [Person!]!
     findPerson(name: String!): Person
   }
 
@@ -64,6 +70,10 @@ const typeDefs = `
       phone: String
       street: String!
       city: String!
+    ): Person
+    editNumber(
+      name: String!
+      phone: String!
     ): Person
   }
 `
@@ -76,7 +86,17 @@ const typeDefs = `
 const resolvers = {
   Query: {
     personCount: () => persons.length,
-    allPersons: () => persons,
+    allPersons: (obj, args) => {
+      // enum は列挙型で、列挙されたいずれかの値が常にセットされていることを示す
+      if (!args.phone) {
+        return persons
+      }
+      // allPersonsを呼び出す際に、allPersons(phone: YES) とすると、
+      // 電話番号を持つ人だけを返す。phone は YES or NO の文字列しか受け付けない(nullは可)
+      const byPhone = (person) =>
+        args.phone === 'YES' ? person.phone : !person.phone
+      return persons.filter(byPhone)
+    },
     findPerson: (obj, args) => 
       persons.find(p => p.name === args.name)
   },
@@ -102,9 +122,28 @@ const resolvers = {
   Mutation: {
     // args の引数や型が typeDefs で定義されている
     addPerson: (obj, args) => {
+      // 電話帳に同じ名前を登録しようとするとエラーを出すようにする
+      if (persons.find(p => p.name === args.name)) {
+        throw new GraphQLError('Name must be unique', {
+          extensions: {
+            code: 'BAD_USER_INPUT',
+            invalidArgs: args.name
+          }
+        })
+      }
       const person = { ...args, id: uuid() }
       persons = persons.concat(person)
       return person
+    },
+    editNumber: (obj, args) => {
+      const person = persons.find(p => p.name === args.name)
+      if (!person) {
+        return null
+      }
+
+      const updatedPerson = { ...person, phone: args.phone}
+      persons = persons.map(p => p.name === args.name ? updatedPerson : p)
+      return updatedPerson
     }
   }
 }
