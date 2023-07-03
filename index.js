@@ -6,6 +6,8 @@
 const { ApolloServer } = require('@apollo/server')
 const { startStandaloneServer } = require('@apollo/server/standalone')
 
+const { v1: uuid } = require('uuid')
+
 // GraphQL は実際にはデータベースとは何の関係もない。
 // つまり、データがどのように保存されているかは関係なく、
 // GraphQL API が使用するデータは、RDB、ドキュメント データベース、
@@ -55,7 +57,18 @@ const typeDefs = `
     allPersons: [Person!]!
     findPerson(name: String!): Person
   }
+
+  type Mutation {
+    addPerson(
+      name: String!
+      phone: String
+      street: String!
+      city: String!
+    ): Person
+  }
 `
+// mutation は、データに対して変更を引き起こすすべての操作を定義する
+// addPerson(): Person で、戻り値が Person 型であることを示している。
 
 // GraphQL クエリは、サーバーとクライアントの間で移動するデータのみを記述する。
 // すべてのリゾルバーは、次の 4 つの位置引数が与えられる。
@@ -84,6 +97,15 @@ const resolvers = {
         city: obj.city
       }
     }
+  },
+
+  Mutation: {
+    // args の引数や型が typeDefs で定義されている
+    addPerson: (obj, args) => {
+      const person = { ...args, id: uuid() }
+      persons = persons.concat(person)
+      return person
+    }
   }
 }
 
@@ -96,6 +118,24 @@ const resolvers = {
 //       city 
 //       street
 //     }
+//   }
+// }
+
+// Mutation のクエリ例は以下。
+// mutation {
+//   addPerson(
+//     name: "Pekka Mikkola"
+//     phone: "045-2374321"
+//     street: "Vilppulantie 25"
+//     city: "Helsinki"
+//   ) {
+//     name
+//     phone
+//     address{
+//       city
+//       street
+//     }
+//     id
 //   }
 // }
 
