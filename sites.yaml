@@ -1,0 +1,11 @@
+sources:
+  test1:
+    jobs:
+      zzzq: "40 * * * *"
+      zzz2: true
+      uuu:
+        - bbb: aaaaa
+    host:
+      xxx1: "host"
+      xxx2: http
+      xxx3: true
